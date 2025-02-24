@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body class="bg-dark">
+    <!-- <p id="text_location"></p> -->
+    <!-- <p id="text_temperature"></p> -->
+
+    <!-- <div id="svg_weather_icon"></div>  -->
+
+    <div class="d-flex justify-content-center align-items-center vh-100">
+
+        <div class="card col-12 col-md-6 col-lg-4" id="card_weather">
+            <div class="card-body" id="card_weather_body">
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    
+                    <!-- Location & Time -->
+                    <div>
+                        <h1 id="text_location" class="fs-3 mt-0" aria-label="Location"></h1>
+                        <time id="text_date"></time>
+                    </div>
+
+                    <!-- Weather Icon, Temperature, H/L, Conditions -->
+                    <div class="d-flex flex-column align-items-center">
+                        <!-- Weather Icon, Temperature -->
+                        <div class="d-flex align-items-center">
+                            <div class="mt-4" id="svg_weather_icon"></div>
+                            <p id="text_temperature" aria-label="temperature" class="mt-3 ms-2 mb-0 fs-2"></p>
+                        </div>
+
+                        <!-- H/L, Conditions -->
+                        <div class="d-flex justify-content-center align-items-center mt-2">
+                            <p id="text_condition" aria-label="current weather conditions" class="mb-4 mt-0 fs-6 text-muted"></p>
+                            <span class="mx-2 mb-4 mt-0 text-muted">|</span>
+                            <p id="text_highlow" aria-label="High and low temperature today" class="mb-4 fs-6"></p>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <hr>
+
+
+                <!-- Humidity & Precipitation -->
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                        <svg aria-label="humidity icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="blue" class="bi bi-droplet-half" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M7.21.8C7.69.295 8 0 8 0q.164.544.371 1.038c.812 1.946 2.073 3.35 3.197 4.6C12.878 7.096 14 8.345 14 10a6 6 0 0 1-12 0C2 6.668 5.58 2.517 7.21.8m.413 1.021A31 31 0 0 0 5.794 3.99c-.726.95-1.436 2.008-1.96 3.07C3.304 8.133 3 9.138 3 10c0 0 2.5 1.5 5 .5s5-.5 5-.5c0-1.201-.796-2.157-2.181-3.7l-.03-.032C9.75 5.11 8.5 3.72 7.623 1.82z"/>
+                            <path fill-rule="evenodd" d="M4.553 7.776c.82-1.641 1.717-2.753 2.093-3.13l.708.708c-.29.29-1.128 1.311-1.907 2.87z"/>
+                        </svg>
+                        <p class="fs-5 mt-3 me-2" id="text_humidity"></p>
+
+                        <svg  aria-label="chance of precipitation icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="grey" class="bi bi-cloud-drizzle-fill" viewBox="0 0 16 16">
+                            <path d="M4.158 12.025a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m6 0a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m-3.5 1.5a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m6 0a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m.747-8.498a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 11H13a3 3 0 0 0 .405-5.973"/>
+                        </svg>
+                        <p class="fs-5 ms-1 mt-3" id="text_precipitation"></p>
+                    </div>
+
+                    <!-- Credit to open-meteo for data -->
+                    <a aria-label="link to open-meteo where weather information comes from" class="text-muted fs-10" href="https://open-meteo.com/">Data from open-meteo</a>
+
+                </div>
+
+
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Get geolocation_data
+        function get_geolocation_data() {
+            return new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject)
+            })
+        }
+
+        
+        // Gets the weather data from the API
+        // and from OpenStreetView for the location 
+        async function get_weather_data() {
+            // Coordinates for APIs
+            let float_latitude = null
+            let float_longitude = null
+            let string_location = null
+
+            // Store weather API response data information
+            let float_temperature = null 
+            let float_max_temperature = null 
+            let float_min_temperature = null 
+            let int_weather_code = null 
+            let int_humidity = null 
+            let int_precipitation = null 
+            let object_weather_data = null
+            let object_location_data = null
+            let string_time = null
+
+            // API urls 
+            let string_weather_api = "https://api.open-meteo.com/v1/forecast?"
+            let string_openstreetview_api = "https://nominatim.openstreetmap.org/reverse?"
+
+
+            try {
+                // Will ask user to allow website to use location services 
+                let object_geolocation = await get_geolocation_data()
+                float_latitude = object_geolocation.coords.latitude
+                float_longitude = object_geolocation.coords.longitude
+
+                if (float_latitude === null || float_longitude === null) {
+                    throw new Error("Geolocation could not be fulfilled");
+                }
+
+                // Build the url for all our weather data 
+                const url_search_parameters_weather = new URLSearchParams({
+                    latitude: float_latitude,
+                    longitude: float_longitude,
+                    current: "temperature_2m,relative_humidity_2m,precipitation,weather_code",
+                    daily: "temperature_2m_max,temperature_2m_min",
+                    temperature_unit: "fahrenheit",
+                    wind_speed_unit: "mph",
+                    precipitation_unit: "inch",
+                    timezone: "auto",
+                    forecast_days: "1"
+                })
+
+                // request from weather API
+                let object_weather_response = await fetch(`${string_weather_api}${url_search_parameters_weather.toString()}`)
+                if (!object_weather_response.ok) {
+                    throw new Error("Could not connect to weather api.")
+                }
+
+                // Reponse -> JSON
+                object_weather_data = await object_weather_response.json()
+                if (object_weather_data === null) {
+                    throw new Error("Could not connect to weather api.")
+                }
+
+
+                // Get location name from OpenStreeView api 
+                const url_search_parameters_location = new URLSearchParams({
+                    lat: float_latitude,
+                    lon: float_longitude,
+                    format: "json",
+                })
+
+                // request from openstreetview API
+                let object_location_response = await fetch(`${string_openstreetview_api}${url_search_parameters_location.toString()}`)
+                if (!object_location_response.ok) {
+                    throw new Error("Could not connect to location api.")
+                }
+
+                // response -> josn 
+                object_location_data = await object_location_response.json()
+                if (object_location_data === null) {
+                    throw new Error("Could not connect to location api.")
+                }
+
+                // Get all the information we need from our data 
+                string_location = object_location_data.address.city
+                string_time = object_weather_data.current.time
+                string_time = string_time.split("T")[0]
+                float_temperature = object_weather_data.current.temperature_2m 
+                float_min_temperature = object_weather_data.daily.temperature_2m_min
+                float_max_temperature = object_weather_data.daily.temperature_2m_max
+                int_weather_code = object_weather_data.current.weather_code
+                int_humidity = object_weather_data.current.relative_humidity_2m
+                int_precipitation = object_weather_data.current.precipitation 
+
+                // final error check to ensure all data obtained 
+                if ((string_location || float_temperature || int_weather_code || int_humidity || int_precipitation || string_time) === null) {
+                    throw new Error("Failed to retrieve needed information from APIs")
+                }
+
+            } catch (error) {
+                console.log("Failed to load weather data", error)
+                document.querySelector('#text_location').innerHTML = "Failed to get location."
+            }
+
+            // display to the user 
+            print_weather_data(
+                string_location,
+                string_time,
+                float_temperature,
+                float_min_temperature,
+                float_max_temperature,
+                int_weather_code,
+                int_humidity,
+                int_precipitation
+            )
+        }
+
+        get_weather_data()
+
+    </script>
+
+    <script>
+        function print_weather_data(string_location, string_time, float_temperature, float_min_temperature, float_max_temperature, int_weather_code, int_humidity, int_precipitation) {
+
+            // Drop in the current weather information
+            document.querySelector("#text_location").innerHTML = string_location
+            document.querySelector("#text_date").outerHTML = `<time id="text_date" class="text-muted" aria-label="date" datetime="${string_time}">${string_time}</time>`
+            document.querySelector('#text_temperature').innerHTML = float_temperature + "°"
+            document.querySelector('#text_highlow').innerHTML = `H: ${float_max_temperature}° L: ${float_min_temperature}°`
+            document.querySelector('#text_humidity').innerHTML = int_humidity + "%"
+            document.querySelector('#text_precipitation').innerHTML = int_precipitation + "%"
+
+            // Get appropriate weather icon 
+            let string_icon_html = ""
+            let string_icon_aria_label = ""
+            let string_conditions = ""
+
+            switch(int_weather_code) {
+                case 0:
+                case 1:
+                    string_conditions = "Clear"
+                    string_icon_aria_label = "Icon of Sun with clear skys"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="orange" class="bi bi-brightness-high-fill" viewBox="0 0 16 16">
+                                            <path d="M12 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0M8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0m0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13m8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5M3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8m10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0m-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0m9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707M4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .708"/>
+                                        </svg>`
+                    break;
+                case 2:
+                case 3:
+                    string_conditions = "Overcast"
+                    string_icon_aria_label = "Icon of Overcast clouds"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-sun-fill" viewBox="0 0 16 16">
+                                            <path d="M11.473 11a4.5 4.5 0 0 0-8.72-.99A3 3 0 0 0 3 16h8.5a2.5 2.5 0 0 0 0-5z"/>
+                                            <path d="M10.5 1.5a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0zm3.743 1.964a.5.5 0 1 0-.707-.707l-.708.707a.5.5 0 0 0 .708.708zm-7.779-.707a.5.5 0 0 0-.707.707l.707.708a.5.5 0 1 0 .708-.708zm1.734 3.374a2 2 0 1 1 3.296 2.198q.3.423.516.898a3 3 0 1 0-4.84-3.225q.529.017 1.028.129m4.484 4.074c.6.215 1.125.59 1.522 1.072a.5.5 0 0 0 .039-.742l-.707-.707a.5.5 0 0 0-.854.377M14.5 6.5a.5.5 0 0 0 0 1h1a.5.5 0 0 0 0-1z"/>
+                                        </svg>`
+                    break;
+                case 45:
+                case 48:
+                    string_conditions = "Fog"
+                    string_icon_aria_label = "Icon of Fog"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-fog-fill" viewBox="0 0 16 16">
+                                            <path d="M3 13.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m10.405-9.473a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 12H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 51:
+                case 53:
+                case 55:
+                case 56:
+                case 57:
+                    string_conditions = "Drizzle"
+                    string_icon_aria_label = "Icon of Light Rain"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-drizzle-fill" viewBox="0 0 16 16">
+                                            <path d="M4.158 12.025a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m6 0a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m-3.5 1.5a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m6 0a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m.747-8.498a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 11H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 61:
+                case 63:
+                case 65:
+                case 66:
+                case 67:
+                    string_conditions = "Showers"
+                    string_icon_aria_label = "Icon of Raining"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-rain-fill" viewBox="0 0 16 16">
+                                            <path d="M4.158 12.025a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m3 0a.5.5 0 0 1 .316.633l-1 3a.5.5 0 1 1-.948-.316l1-3a.5.5 0 0 1 .632-.317m3 0a.5.5 0 0 1 .316.633l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.317m3 0a.5.5 0 0 1 .316.633l-1 3a.5.5 0 1 1-.948-.316l1-3a.5.5 0 0 1 .632-.317m.247-6.998a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 11H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 71:
+                case 73:
+                case 75:
+                case 77:
+                    string_conditions = "Snow"
+                    string_icon_aria_label = "Icon of Snow"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="light-blue" class="bi bi-snow" viewBox="0 0 16 16">
+                                            <path d="M8 16a.5.5 0 0 1-.5-.5v-1.293l-.646.647a.5.5 0 0 1-.707-.708L7.5 12.793V8.866l-3.4 1.963-.496 1.85a.5.5 0 1 1-.966-.26l.237-.882-1.12.646a.5.5 0 0 1-.5-.866l1.12-.646-.884-.237a.5.5 0 1 1 .26-.966l1.848.495L7 8 3.6 6.037l-1.85.495a.5.5 0 0 1-.258-.966l.883-.237-1.12-.646a.5.5 0 1 1 .5-.866l1.12.646-.237-.883a.5.5 0 1 1 .966-.258l.495 1.849L7.5 7.134V3.207L6.147 1.854a.5.5 0 1 1 .707-.708l.646.647V.5a.5.5 0 1 1 1 0v1.293l.647-.647a.5.5 0 1 1 .707.708L8.5 3.207v3.927l3.4-1.963.496-1.85a.5.5 0 1 1 .966.26l-.236.882 1.12-.646a.5.5 0 0 1 .5.866l-1.12.646.883.237a.5.5 0 1 1-.26.966l-1.848-.495L9 8l3.4 1.963 1.849-.495a.5.5 0 0 1 .259.966l-.883.237 1.12.646a.5.5 0 0 1-.5.866l-1.12-.646.236.883a.5.5 0 1 1-.966.258l-.495-1.849-3.4-1.963v3.927l1.353 1.353a.5.5 0 0 1-.707.708l-.647-.647V15.5a.5.5 0 0 1-.5.5z"/>
+                                        </svg> `
+                    break;
+                case 80:
+                case 81:
+                case 82:
+                    string_conditions = "Showers"
+                    string_icon_aria_label = "Icon of Rain showers"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-rain-heavy-fill" viewBox="0 0 16 16">
+                                            <path d="M4.176 11.032a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m.229-7.005a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 10H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 85:
+                case 86:
+                    string_conditions = "Snow Shower"
+                    string_icon_aria_label = "Icon of Snow Showers"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="light-blue" class="bi bi-cloud-snow-fill" viewBox="0 0 16 16">
+                                            <path d="M2.625 11.5a.25.25 0 0 1 .25.25v.57l.501-.287a.25.25 0 0 1 .248.434l-.495.283.495.283a.25.25 0 0 1-.248.434l-.501-.286v.569a.25.25 0 1 1-.5 0v-.57l-.501.287a.25.25 0 0 1-.248-.434l.495-.283-.495-.283a.25.25 0 0 1 .248-.434l.501.286v-.569a.25.25 0 0 1 .25-.25m2.75 2a.25.25 0 0 1 .25.25v.57l.5-.287a.25.25 0 0 1 .249.434l-.495.283.495.283a.25.25 0 0 1-.248.434l-.501-.286v.569a.25.25 0 1 1-.5 0v-.57l-.501.287a.25.25 0 0 1-.248-.434l.495-.283-.495-.283a.25.25 0 0 1 .248-.434l.501.286v-.569a.25.25 0 0 1 .25-.25m5.5 0a.25.25 0 0 1 .25.25v.57l.5-.287a.25.25 0 0 1 .249.434l-.495.283.495.283a.25.25 0 0 1-.248.434l-.501-.286v.569a.25.25 0 0 1-.5 0v-.57l-.501.287a.25.25 0 0 1-.248-.434l.495-.283-.495-.283a.25.25 0 0 1 .248-.434l.501.286v-.569a.25.25 0 0 1 .25-.25m-2.75-2a.25.25 0 0 1 .25.25v.57l.5-.287a.25.25 0 0 1 .249.434l-.495.283.495.283a.25.25 0 0 1-.248.434l-.501-.286v.569a.25.25 0 1 1-.5 0v-.57l-.501.287a.25.25 0 0 1-.248-.434l.495-.283-.495-.283a.25.25 0 0 1 .248-.434l.501.286v-.569a.25.25 0 0 1 .25-.25m5.5 0a.25.25 0 0 1 .25.25v.57l.5-.287a.25.25 0 0 1 .249.434l-.495.283.495.283a.25.25 0 0 1-.248.434l-.501-.286v.569a.25.25 0 0 1-.5 0v-.57l-.501.287a.25.25 0 1 1-.248-.434l.495-.283-.495-.283a.25.25 0 0 1 .248-.434l.501.286v-.569a.25.25 0 0 1 .25-.25m-.22-7.223a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 10.25H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 95:
+                    string_conditions = "Thunderstorm"
+                    string_icon_aria_label = "Icon of thunderstorms"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-lightning-rain-fill" viewBox="0 0 16 16">
+                                            <path d="M2.658 11.026a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m9.5 0a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m-7.5 1.5a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m9.5 0a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 0 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m-7.105-1.25A.5.5 0 0 1 7.5 11h1a.5.5 0 0 1 .474.658l-.28.842H9.5a.5.5 0 0 1 .39.812l-2 2.5a.5.5 0 0 1-.875-.433L7.36 14H6.5a.5.5 0 0 1-.447-.724zm6.352-7.249a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 10H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                case 96:
+                case 99:
+                    string_conditions = "Rain/Hail"
+                    string_icon_aria_label = "Icon of Rain and Hail"
+                    string_icon_html = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="grey" class="bi bi-cloud-hail-fill" viewBox="0 0 16 16">
+                                            <path d="M3.75 15.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m.408-3.724a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316M7.75 15.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m.408-3.724a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m3.592 3.724a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m.408-3.724a.5.5 0 0 1 .316.632l-.5 1.5a.5.5 0 1 1-.948-.316l.5-1.5a.5.5 0 0 1 .632-.316m1.247-6.999a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 10.5H13a3 3 0 0 0 .405-5.973"/>
+                                        </svg>`
+                    break;
+                default:
+                    throw new Error(`Not handled weather code given: ${int_weather_code}`)
+                    break;
+            }
+            // send icon and label to the html 
+            document.querySelector('#svg_weather_icon').innerHTML = string_icon_html
+            document.querySelector('#svg_weather_icon').ariaLabel = string_icon_aria_label
+            document.querySelector('#text_condition').innerHTML = string_conditions
+        } 
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js" integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy" crossorigin="anonymous"></script>
+</body>
+</html> 
